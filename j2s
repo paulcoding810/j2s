@@ -1,0 +1,26 @@
+#!/bin/sh
+
+main(){
+	local file="$1"
+	local wd=`pwd`
+	local lib_dir="$wd/lib"
+
+	if [ ! -f $file ]; then
+		echo $1 not exist!;
+		exit 1
+	fi
+
+	local path=`dirname $file`
+	local name=`basename $file`
+	cd $path	
+
+	javac $file 
+	$wd/d8 ${file//java/class}	
+	java -jar "$lib_dir/baksmali.jar" d classes.dex
+
+	local smali_path="$path/out/${name//java/smali}" 
+	
+	less $smali_path 
+}
+
+main "$1"
