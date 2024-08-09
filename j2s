@@ -2,7 +2,8 @@
 
 main(){
 	local file="$1"
-	local wd=`pwd`
+
+	local wd="$(dirname "$(realpath "$0")")"
 	local lib_dir="$wd/lib"
 
 	if [ ! -f $file ]; then
@@ -12,15 +13,24 @@ main(){
 
 	local path=`dirname $file`
 	local name=`basename $file`
+
+	local class_file="${file//java/class}"
+	local dex_file="classes.dex"
+
 	cd $path	
 
 	javac $file 
-	$wd/d8 ${file//java/class}	
+
+	$wd/d8 $class_file
 	java -jar "$lib_dir/baksmali.jar" d classes.dex
 
 	local smali_path="$path/out/${name//java/smali}" 
 	
-	less $smali_path 
+	cat $smali_path 
+
+	# clear
+	rm -r "$path/out"
+	rm $class_file $dex_file
 }
 
 main "$1"
