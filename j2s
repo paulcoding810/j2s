@@ -5,6 +5,7 @@ set -eo pipefail
 cleanup() {
 	rm -rf "out"
 	[ -f "$dex_file" ] && rm "$dex_file"
+	return 0
 }
 
 main() {
