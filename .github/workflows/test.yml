@@ -1,0 +1,18 @@
+name: Test j2s
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  run-j2s:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Make j2s executable
+        run: chmod +x ./j2s
+      - name: Run j2s on MainActivity.java
+        run: ./j2s MainActivity.java
