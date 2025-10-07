@@ -1,36 +1,44 @@
 #!/bin/sh
 
-main(){
+set -eo pipefail
+
+cleanup() {
+	rm -rf "out"
+	[ -f "$dex_file" ] && rm "$dex_file"
+}
+
+main() {
 	local file="$1"
+	local wd=$(dirname $(realpath $0))
 
-	local wd="$(dirname "$(realpath "$0")")"
 	local lib_dir="$wd/lib"
+	local dex_file="classes.dex"
 
-	if [ ! -f $file ]; then
-		echo $1 not exist!;
+	trap cleanup EXIT
+
+	if [ ! -f "$file" ]; then
+		echo "$file not exist!"
 		exit 1
 	fi
 
-	local path=`dirname $file`
-	local name=`basename $file`
+	# Compile Java source file
+	javac -classpath "$lib_dir/android/*:$lib_dir/androidx/*" -d "out" "$file"
 
-	local class_file="${file//java/class}"
-	local dex_file="classes.dex"
+	# Convert class files to DEX
+	"$wd/d8" out/*.class
 
-	cd $path	
+	# Disassemble DEX to smali
+	java -jar "$lib_dir/baksmali.jar" d "$dex_file"
 
-	javac $file 
+	# Print smali files with colorized headers
+	for smali in $(find out -name "*.smali"); do
+		echo "\033[36m----- $(basename $smali) -----\033[0m"
+		echo
+		cat "$smali"
+		echo
+	done
 
-	$wd/d8 $class_file
-	java -jar "$lib_dir/baksmali.jar" d classes.dex
-
-	local smali_path="$path/out/${name//java/smali}" 
-	
-	cat $smali_path 
-
-	# clear
-	rm -r "$path/out"
-	rm $class_file $dex_file
+	cleanup
 }
 
 main "$1"
