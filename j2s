@@ -39,6 +39,8 @@ main() {
 	done
 
 	cleanup
+
+	exit 0
 }
 
 main "$1"
