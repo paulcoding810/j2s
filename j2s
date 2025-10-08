@@ -3,7 +3,7 @@
 set -eo pipefail
 
 cleanup() {
-	rm -rf "out"
+	rm -rf "$out_dir"
 	[ -f "$dex_file" ] && rm "$dex_file"
 	return 0
 }
@@ -11,6 +11,9 @@ cleanup() {
 main() {
 	local file="$1"
 	local wd=$(dirname $(realpath $0))
+	local out_dir="$wd/out"
+
+	mkdir -p "$out_dir"
 
 	local lib_dir="$wd/lib"
 	local dex_file="classes.dex"
@@ -23,20 +26,21 @@ main() {
 	fi
 
 	# Compile Java source file
-	javac -classpath "$lib_dir/android/*:$lib_dir/androidx/*" -d "out" "$file"
+	javac -classpath "$lib_dir/android/*:$lib_dir/androidx/*" -d "$out_dir" "$file"
 
 	# Convert class files to DEX
-	"$wd/d8" out/*.class
+	# add --no-desugaring to hide warnings about desugaring
+	"$wd/d8" "$out_dir"/*.class
 
 	# Disassemble DEX to smali
-	java -jar "$lib_dir/baksmali.jar" d "$dex_file"
+	java -jar "$lib_dir/baksmali.jar" d "$dex_file" -o "$out_dir"
 
 	# Print smali files with colorized headers
-	for smali in $(find out -name "*.smali"); do
-		echo "\033[36m----- $(basename $smali) -----\033[0m"
+	for smali in $(find "$out_dir" -name "*.smali"); do
+		echo
+		echo "# ------------------ $(basename $smali) ------------------"
 		echo
 		cat "$smali"
-		echo
 	done
 
 	cleanup
